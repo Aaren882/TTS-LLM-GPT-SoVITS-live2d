@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>PyScript Chatbot</title>
+    <link rel="stylesheet" href="https://pyscript.net/snapshots/2024.9.2/core.css" />
+    <script type="module" src="https://pyscript.net/snapshots/2024.9.2/core.js"></script>
+    <script src="https://unpkg.com/live2d-widget@3.0.3/lib/L2Dwidget.min.js"></script>
+    <py-config>
+      [[runtimes]]
+      src = "runtime/pyodide.js"
+      name = "pyodide-0.21.3"
+      lang = "python"
+    </py-config>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            text-align: center;
+        }
+        #text_talk {
+            resize: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<label>請輸入問題</label>
+<input id="text" style="width:300px;" placeholder="在此輸入您的問題">
+<button id="start_talk">傳送</button>
+<br><br>
+<textarea id="text_talk" style="width:320px;height:200px;" readonly></textarea>
+
+<!-- 初始化 2D 模型 -->
+<script>
+    L2Dwidget.init({
+        model: {
+            jsonPath: "pythonAnaconda01/model/yu3/yu3.model3.json" // 替換為你的模型路徑
+        },
+        display: {
+            position: "right", // 模型顯示位置
+            width: 150,         // 模型寬度
+            height: 300         // 模型高度
+        },
+        mobile: {
+            show: true          // 是否在手機顯示
+        },
+        react: {
+            opacityDefault: 1,  // 默認透明度
+            opacityOnHover: 1   // 滑鼠懸浮時的透明度
+        }
+    });
+</script>
+
+<py-script>
+    from pyodide.http import pyfetch
+    from js import document
+
+    async def generate_response(event):
+        user_text = document.getElementById("text").value
+        if not user_text.strip():
+            document.getElementById("text_talk").value = "請輸入問題。"
+            return
+
+        document.getElementById("text_talk").value = "正在回應，請稍候..."
+        document.getElementById("text").value = ""  # 清空輸入框
+
+        try:
+            response = await pyfetch(
+                url="http://127.0.0.1:5000/generate_text",
+                method="POST",
+                headers={"Content-Type": "application/json"},
+                body=f'{{"question": "{user_text}"}}'
+            )
+
+            if response.status == 200:
+                data = await response.json()
+                document.getElementById("text_talk").value = data.get("answer", "伺服器未回應")
+            else:
+                document.getElementById("text_talk").value = f"錯誤：{response.status}"
+        except Exception as e:
+            document.getElementById("text_talk").value = f"發生異常：{str(e)}"
+
+    document.getElementById("start_talk").onclick = generate_response
+</py-script>
+
+</body>
+</html>

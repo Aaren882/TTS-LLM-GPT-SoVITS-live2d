@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live2D Interactive Chat</title>
+  <script src="./js/live2dcubismcore.min.js"></script>
+  <script src="./js/live2d.min.js"></script>
+  <script src="./js/pixi.min.js"></script>
+  <script src="./js/cubism4.min.js"></script>
+  <script src="./js/jquery-3.1.1.min.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+  <style>
+    #control {
+      position: absolute;
+      top: 550px;
+      left: 1100px;
+      color: rgb(255, 255, 255);
+      font-size: 18px;
+    }
+    #canvas {
+      background-color: rgb(29, 121, 196);
+    }
+    button {
+      width: 120px;
+      height: 50px;
+      font-size: 18px;
+      margin: 5px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      background-color: #ff9100;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+
+  <div id="control">
+    <button onclick="JavaScript:window.location.href='/'">RETURN</button>
+    <br />
+    <!-- 隱藏的設定 -->
+    <div id="hidden-config" style="display:none;">
+        <input type="search" id="apiurl" value="http://127.0.0.1:9880">
+        <input type="search" id="llmurl" value="http://localhost:11434/api/chat">
+        <input id="model_name" value="llama3">
+    </div>
+    <!-- 輸入和按鈕 -->
+    <input id="text" type="text" placeholder="請輸入對話內容" style="width:470px; height:50px;">
+    <button id="start_talk">START</button>
+    <br /><br />
+    <!-- 對話區域 -->
+    <textarea id="text_talk" style="width:600px; height:300px; font-size:15px;"></textarea>
+    <button id="clear_text" onclick="clearText()">CLEAR</button>
+</div>
+
+<script>
+    // 獲取隱藏設定的值
+    const apiurl = document.getElementById('apiurl').value;
+    const llmurl = document.getElementById('llmurl').value;
+    const modelName = document.getElementById('model_name').value;
+
+    console.log("API URL:", apiurl);
+    console.log("LLM URL:", llmurl);
+    console.log("Model Name:", modelName);
+
+    // 清除文字區域
+    function clearText() {
+        document.getElementById('text_talk').value = '';
+    }
+</script>
+
+
+<script>
+  function clearText() {
+    document.getElementById('text_talk').value = '';  // 清空對話框內容
+    document.getElementById('text').value = '';  // 清空輸入框內容
+  }
+</script>
+
+
+  <script type="text/javascript">
+
+    let model4; // 確保 model4 是全局變數
+
+    // 按下 START 按鈕後的處理
+    $("#start_talk").click(async function () {
+  let text = $("#text").val().trim();
+
+  if (text === "") {
+    alert("请输入聊天内容");
+    return;
+  }
+
+  $("#start_talk").prop("disabled", true); // 禁用按鈕防止重複提交
+
+  const data = {
+    model: $("#model_name").val(),
+    stream: true,
+    messages: [
+      {
+        role: "assistant",
+        content: "永遠使用繁體中文進行對話"
+      },
+      {
+        role: "user",
+        content: text
+      }
+    ],
+    options: {
+      num_keep: 5,
+      num_predict: 100,
+      top_k: 40,
+      top_p: 0.95,
+      temperature: parseFloat($("#temperature").val()),
+      repeat_penalty: 1,
+      num_thread: 8,
+      language: "zh-TW"
+    }
+  };
+
+  $("#text_talk").text(""); // 清空顯示框
+
+  try {
+    const response = await fetch($("#llmurl").val(), {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const reader = response.body?.pipeThrough(new TextDecoderStream()).getReader();
+    let generatedText = "";
+
+    while (true) {
+      let { done, value } = await reader.read();
+      if (done) {
+        console.log("***********************done");
+        $("#start_talk").prop("disabled", false); // 恢復按鈕
+        break;
+      }
+
+      try {
+        value = JSON.parse(value);
+        const messageText = value.message.content;
+        generatedText += messageText; // 累積返回的對話文本
+        $("#text_talk").text(generatedText); // 使用 .text() 顯示純文本
+      } catch (error) {
+        console.error("JSON 解析出错: " + error);
+      }
+    }
+
+    // 語音播放
+    playAudio(generatedText);
+
+  } catch (error) {
+    console.error("LLM 請求失敗:", error);
+    alert("請求 LLM 服務失敗，請檢查設置或網絡");
+    $("#start_talk").prop("disabled", false);
+  }
+});
+
+
+    // 播放音頻並根據進度更新嘴巴動畫
+    function playAudio(text) {
+      axios.get("http://localhost:3000/edge_tts", {
+        params: { text: text },
+      })
+      .then(response => {
+        const base64Audio = response.data.audio;
+        const audioData = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0)).buffer;
+        const audioBlob = new Blob([audioData], { type: 'audio/wav' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        // 創建新的 Audio 物件來播放語音
+        const audio = new Audio(audioUrl);
+
+        // 這裡新增：設置播放時更新嘴巴動作
+        audio.ontimeupdate = () => {
+          let progress = audio.currentTime / audio.duration;
+          updateMouthMovement(progress);  // 根據音頻播放進度更新嘴巴動作
+        };
+
+        // 播放語音
+        audio.play()
+          .then(() => {
+            console.log("音頻播放成功");
+          })
+          .catch((error) => {
+            console.error("音頻播放失敗:", error);
+          });
+      })
+      .catch(error => {
+        console.error('語音請求失敗:', error);
+      });
+    }
+
+    // 更新 Live2D 嘴巴動作
+    function updateMouthMovement(progress) {
+      // 根據音頻進度調整嘴巴的 blendShape（這裡只是示範，根據您的模型需要進行調整）
+      let mouthBlendShape = Math.sin(progress * Math.PI); // 嘴巴動作模擬
+      console.log(`Progress: ${progress}, Mouth Blend Shape: ${mouthBlendShape}`);  // 可加上這個來調試進度與嘴巴開合的關係
+
+      // 確保 model4 被正確加載並且更新
+      if (model4) {
+        model4.setParamFloat("Param_MouthOpen", mouthBlendShape); // 假設 Param_MouthOpen 是控制嘴巴的 blendShape
+      } else {
+        console.error("model4 尚未加載或初始化！");
+      }
+    }
+
+    // 初始化模型和畫布設置
+    (async function main() {
+      const app = new PIXI.Application({
+        view: document.getElementById("canvas"),
+        autoStart: true,
+        resizeTo: window,
+        transparent: true,
+        backgroundAlpha: 0,
+      });
+
+      var cubism4Model = './models/<%=model_path%>/<%=model_path%>.model3.json';
+      const live2d = PIXI.live2d;
+      var models = await Promise.all([live2d.Live2DModel.from(cubism4Model, { autoInteract: true })]);
+
+      models.forEach((model) => {
+        app.stage.addChild(model);
+        const scaleX = (innerWidth) / model.width;
+        const scaleY = (innerHeight) / model.height;
+        model.scale.set(Math.min(scaleX, scaleY));
+        model.y = innerHeight * 0;
+        draggable(model);
+      });
+
+      model4 = models[0];  // 確保 model4 在這裡被正確初始化
+      model4.x = innerWidth / 25;
+
+      // 拖動模型
+      function draggable(model) {
+        model.buttonMode = true;
+        model.on("pointerdown", (e) => {
+          model.dragging = true;
+          model._pointerX = e.data.global.x - model.x;
+          model._pointerY = e.data.global.y - model.y;
+        });
+        model.on("pointermove", (e) => {
+          if (model.dragging) {
+            model.position.x = e.data.global.x - model._pointerX;
+            model.position.y = e.data.global.y - model._pointerY;
+          }
+        });
+        model.on("pointerupoutside", () => (model.dragging = false));
+        model.on("pointerup", () => (model.dragging = false));
+      }
+    })();
+  </script>
+
+</body>
+</html>

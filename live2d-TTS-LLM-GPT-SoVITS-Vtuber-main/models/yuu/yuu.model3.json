@@ -1,0 +1,23 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "yuu.moc3",
+		"Textures": [
+			"yuu.1024/texture_00.png"
+		],
+		"Physics": "yuu.physics3.json",
+		"DisplayInfo": "yuu.cdi3.json"
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": []
+		},
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": []
+		}
+	]
+}
