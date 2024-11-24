@@ -30,13 +30,12 @@ app.use(express.static(__dirname));
 
 //设置html模板渲染引擎
 app.engine('html',ejs.__express);
+
 //设置渲染引擎为html
 app.set('view engine','html');
 
-
 // 创建 multer 实例
 const upload = multer({ storage: storage });
-
 
 // 上传文件
 app.post('/upload', upload.single('image'), (req, res) => {
@@ -45,8 +44,6 @@ app.post('/upload', upload.single('image'), (req, res) => {
   }
   res.json({ message: '文件上传成功', filename: req.file.filename });
 });
-
-
 
 // edge_tts接口
 /*app.get("/edge_tts", async (req, res) => {
@@ -78,7 +75,6 @@ app.post('/upload', upload.single('image'), (req, res) => {
   });
 });*/
 
-
 // 修改json接口
 app.get("/edit_config", (req, res) => {
     var model_path = req.query.model_path;
@@ -90,20 +86,18 @@ app.get("/edit_config", (req, res) => {
         if (err) {
             res.status(500).send('Error reading file');
         } else {
-            
-            var data = '{"model_path":"' + model_path + '"}';
+          var data = '{"model_path":"' + model_path + '"}';
 
-            console.log(data);
+          console.log(data);
 
-            // 写入修改后的内容到文件
-            fs.writeFile(filePath, data, 'utf8', (err) => {
-                if (err) {
-                    res.status(500).send('Error writing file');
-                } else {
-                    
-                    res.status(200).send('File updated successfully');
-                }
-            });
+          // 写入修改后的内容到文件
+          fs.writeFile(filePath, data, 'utf8', (err) => {
+            if (err) {
+              res.status(500).send('Error writing file');
+            } else {
+              res.status(200).send('File updated successfully');
+            }
+          });
         }
     });
   
