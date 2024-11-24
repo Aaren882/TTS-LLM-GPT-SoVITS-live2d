@@ -10,8 +10,9 @@ import sounddevice as sd
 import soundfile as sf
 import torch
 
-# 定义 Qwen2.5 模型的 API 和服务地址
-MODEL_NAME = "qwen2.5:7b"
+# 定义 Qwen2.5 模型的 API 和服务地址 (by Alibaba)
+# MODEL_NAME = "qwen2.5:7b"
+MODEL_NAME = "llama3.1:latest"
 OLLAMA_API = "http://127.0.0.1:11434"
 OLLAMA_GENERATE = OLLAMA_API + "/api/generate"
 GPTSOVITS_API = "http://127.0.0.1:9880/"
@@ -26,13 +27,13 @@ def is_service_running(port):
 # 启动 GPT-SoVITS 服务
 def start_service():
     def run_service():
-        path = r"C:\Users\User\Downloads\GPT-SoVITS-beta\GPT-SoVITS-beta0706"
+        path = r"K:\GPT-SoVITS-v2-240821"
         os.chdir(path)
         print("启动服务中...")
         subprocess.run([r'runtime\python.exe', 'api.py', '-g',
-                        r"C:\Users\User\Downloads\GPT-SoVITS-beta\GPT-SoVITS-beta0706\GPT_SoVITS\pretrained_models\s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt",
+                        r"K:\GPT-SoVITS-v2-240821\GPT_SoVITS\pretrained_models\s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt",
                         '-s',
-                        r"C:\Users\User\Downloads\GPT-SoVITS-beta\GPT-SoVITS-beta0706\GPT_SoVITS\pretrained_models\s2G488k.pth"])
+                        r"K:\GPT-SoVITS-v2-240821\GPT_SoVITS\pretrained_models\s2G488k.pth"])
         print("服务已启动")
     service_thread = Thread(target=run_service)
     service_thread.start()
@@ -132,8 +133,8 @@ async def main():
     generated_answer = await generate_text_async(user_question)
     if generated_answer:
         print("生成的答案:", generated_answer)
-        refer_wav = (r"C:\Users\User\Downloads\GPT-SoVITS-beta\GPT-SoVITS-beta0706\output\slicer_opt\vocal_yurmp2e151.wav.reformatted.wav_10.wav_0000471680_0000666240.wav")
-        inp_refs = r"C:\Users\User\Downloads\GPT-SoVITS-beta\GPT-SoVITS-beta0706\TEMP\tmpb_88rqdn.wav"
+        refer_wav = (r"K:\GPT-SoVITS-v2-240821\output\slicer_opt\vocal_yurmp2e151.wav.reformatted.wav_10.wav_0000471680_0000666240.wav")
+        inp_refs = r"K:\GPT-SoVITS-v2-240821\TEMP\tmpb_88rqdn.wav"
         await text_to_speech_async(generated_answer, refer_wav_path=refer_wav, inp_refs=inp_refs)
     close_service()
 # 執行主異步函數

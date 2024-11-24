@@ -4,7 +4,7 @@ var ejs=require('ejs');
 const path = require('path');
 const app = express();
 const multer  = require('multer');
-const { EdgeTTS } = require('node-edge-tts')
+// const { EdgeTTS } = require('node-edge-tts')
 
 
 app.listen(3000, () => {
@@ -39,7 +39,6 @@ const upload = multer({ storage: storage });
 
 
 // 上传文件
-
 app.post('/upload', upload.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: '未上传文件' });
@@ -50,8 +49,7 @@ app.post('/upload', upload.single('image'), (req, res) => {
 
 
 // edge_tts接口
-
-app.get("/edge_tts", async (req, res) => {
+/*app.get("/edge_tts", async (req, res) => {
 
   var speaker = req.query.speaker || 'zh-CN-XiaoxiaoNeural'; 
 
@@ -78,17 +76,11 @@ app.get("/edge_tts", async (req, res) => {
     // 将 Base64 编码的音频数据发送到前端
     res.send({ audio: base64Audio });
   });
-
-
-
-});
+});*/
 
 
 // 修改json接口
-
 app.get("/edit_config", (req, res) => {
-    
-
     var model_path = req.query.model_path;
 
     var filePath = "./config.json"
@@ -304,10 +296,6 @@ app.get("/tts_edge", (req, res) => {
           res.render(__dirname + "/live2d_edge_tts",{model_path: modelPath,model_list:dis});
       }
   });
-
-  
-
-
 });
 
 
@@ -315,7 +303,6 @@ app.get("/tts_edge", (req, res) => {
 app.get("/llm_edge_tts", (req, res) => {
 
   var filePath = "./config.json"
-
 
   // 同步地遍历目录并返回目录名
   function getSubdirectories(dirPath) {
