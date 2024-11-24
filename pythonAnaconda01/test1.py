@@ -27,13 +27,13 @@ def is_service_running(port):
 # 启动 GPT-SoVITS 服务
 def start_service():
     def run_service():
-        path = r"K:\GPT-SoVITS-v2-240821"
+        path = r"K:\\GPT-SoVITS-v2-240821"
         os.chdir(path)
         print("启动服务中...")
-        subprocess.run([r'runtime\python.exe', 'api.py', '-g',
-                        r"K:\GPT-SoVITS-v2-240821\GPT_SoVITS\pretrained_models\s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt",
+        subprocess.run([r'runtime\\python.exe', 'api.py', '-g',
+                        r"K:\\GPT-SoVITS-v2-240821\\GPT_SoVITS\\pretrained_models\\s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt",
                         '-s',
-                        r"K:\GPT-SoVITS-v2-240821\GPT_SoVITS\pretrained_models\s2G488k.pth"])
+                        r"K:\\GPT-SoVITS-v2-240821\\GPT_SoVITS\\pretrained_models\\s2G488k.pth"])
         print("服务已启动")
     service_thread = Thread(target=run_service)
     service_thread.start()
@@ -90,7 +90,7 @@ async def generate_text_async(prompt, model_name=MODEL_NAME):
 async def text_to_speech_async(text, refer_wav_path, inp_refs, top_k=5, top_p=1, temperature=1, speed=1):
     params = {
         "refer_wav_path": refer_wav_path,
-        "prompt_text": "声音能够传递情感，建立联系，甚至影响我们的情绪。",
+        "prompt_text": "以內容做回答",
         "prompt_language": "zh",
         "text": text,
         "text_language": "zh",
@@ -104,6 +104,7 @@ async def text_to_speech_async(text, refer_wav_path, inp_refs, top_k=5, top_p=1,
         async with session.post(GPTSOVITS_API, json=params) as response:
             if response.status == 200:
                 file_path = 'temp.wav'
+                print(file_path)
                 with open(file_path, 'wb') as f:
                     f.write(await response.read())
                 data, samplerate = sf.read(file_path)
@@ -114,6 +115,7 @@ async def text_to_speech_async(text, refer_wav_path, inp_refs, top_k=5, top_p=1,
                 sd.wait()
             else:
                 print(f"TTS 请求失败: {response.status}, 错误信息: {await response.text()}")
+
 def close_service():
     port = 9880
     for conn in psutil.net_connections():
@@ -126,6 +128,7 @@ def close_service():
                 print(f"Failed to terminate process with PID {pid}: {e}")
             return
     print(f"No process found using port {port}.")
+
 async def main():
     user_question = input("请输入你的问题: ")
     
@@ -133,9 +136,10 @@ async def main():
     generated_answer = await generate_text_async(user_question)
     if generated_answer:
         print("生成的答案:", generated_answer)
-        refer_wav = (r"K:\GPT-SoVITS-v2-240821\output\slicer_opt\vocal_yurmp2e151.wav.reformatted.wav_10.wav_0000471680_0000666240.wav")
-        inp_refs = r"K:\GPT-SoVITS-v2-240821\TEMP\tmpb_88rqdn.wav"
+        refer_wav = (r"K:\\GPT-SoVITS-v2-240821\\output\slicer_opt\\葉葉葉中文錄音.m4a_0000025280_0000202560.wav")
+        inp_refs = r"K:\\GPT-SoVITS-v2-240821\\TEMP\\tmpb_88rqdn.wav"
         await text_to_speech_async(generated_answer, refer_wav_path=refer_wav, inp_refs=inp_refs)
     close_service()
+
 # 執行主異步函數
 asyncio.run(main())
